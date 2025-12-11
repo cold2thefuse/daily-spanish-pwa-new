@@ -1,0 +1,14 @@
+{
+  "name": "daily-spanish-pwa",
+  "version": "1.0.0",
+  "description": "Daily Spanish PWA",
+  "scripts": {
+    "start": "serve -s .",
+    "build": "echo 'No build step required'",
+    "dev": "serve -l 3000 ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
