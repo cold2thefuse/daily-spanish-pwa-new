@@ -1,0 +1,14 @@
+
+:root{--bg:#000;--card:#071022;--muted:#94a3b8;--accent:#ef4444;--text:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+.container{max-width:520px;width:100%}
+h1{text-align:center;margin:0 0 18px;font-size:20px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:22px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+.word{font-size:44px;font-weight:700}
+.pos{color:var(--muted);margin-top:6px}
+.meaning{margin-top:10px;font-size:18px}
+.example{margin-top:10px;color:var(--muted)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+button{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:8px;color:var(--text);cursor:pointer}
+.info{margin-top:12px;color:var(--muted);font-size:14px}

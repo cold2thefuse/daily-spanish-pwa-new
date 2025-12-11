@@ -1,0 +1,38 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daily Spanish Word</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Daily Spanish Word</h1>
+    <div class="card">
+      <div id="word" class="word">—</div>
+      <div id="pos" class="pos"></div>
+      <div id="meaning" class="meaning"></div>
+      <p id="example" class="example"></p>
+    </div>
+
+    <div class="controls">
+      <button id="pronounce">🔊 Pronounce</button>
+      <button id="copy">📋 Copy</button>
+      <button id="share">🔗 Share</button>
+      <button id="subscribe">🔔 Enable daily push</button>
+    </div>
+
+    <details class="info">
+      <summary>About</summary>
+      <p>This Progressive Web App shows one Spanish word per day, works offline, and is installable on Android.</p>
+      <p>To receive push notifications every morning, the app needs a small server to send the pushes (example server included).</p>
+    </details>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
