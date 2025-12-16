@@ -1,53 +1,73 @@
-
-/*
-server.js - example Node server to support push notifications for the PWA.
-NOTES:
-- This is an example. You must generate VAPID keys and set environment variables:
-  VAPID_PUBLIC and VAPID_PRIVATE
-- Deploy this to a small host (Render, Heroku, Railway). The client expects:
-  GET /vapidPublicKey -> { key: '...' }
-  POST /registerSubscription -> store the subscription JSON
-  POST /sendNow -> trigger sending a notification to all stored subscriptions
-- You can schedule a daily job on the host (cron, Render scheduled job, etc.) to POST /sendNow with the day's payload.
-*/
-const express = require('express');
-const webpush = require('web-push');
-const bodyParser = require('body-parser');
+import express from "express";
+import cors from "cors";
+import webpush from "web-push";
 
 const app = express();
-app.use(bodyParser.json());
 
-const VAPID_PUBLIC = process.env.VAPID_PUBLIC || '<PUT_YOUR_VAPID_PUBLIC_KEY_HERE>';
-const VAPID_PRIVATE = process.env.VAPID_PRIVATE || '<PUT_YOUR_VAPID_PRIVATE_KEY_HERE>';
+app.use(cors({
+  origin: "https://precious-banoffee-f30011.netlify.app"
+}));
+app.use(express.json());
 
-webpush.setVapidDetails('mailto:you@example.com', VAPID_PUBLIC, VAPID_PRIVATE);
+// ----- CHECK ENV VARS (safe logs) -----
+console.log("VAPID_PUBLIC_KEY:", !!process.env.VAPID_PUBLIC_KEY);
+console.log("VAPID_PRIVATE_KEY:", !!process.env.VAPID_PRIVATE_KEY);
+console.log("MAILTO:", process.env.MAILTO);
 
-let SUBSCRIPTIONS = []; // Replace with persistent store in production
+// ----- VAPID SETUP -----
+webpush.setVapidDetails(
+  `mailto:${process.env.MAILTO}`,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
-app.get('/vapidPublicKey', (req, res) => {
-  res.json({ key: VAPID_PUBLIC });
+// ----- DATA -----
+const words = [
+  { word: "Hola", meaning: "Hello" },
+  { word: "Gracias", meaning: "Thank you" },
+  { word: "Perro", meaning: "Dog" },
+  { word: "Casa", meaning: "House" },
+  { word: "Comer", meaning: "To eat" }
+];
+
+let pushSubscriptions = [];
+
+// ----- ROUTES -----
+app.get("/", (req, res) => {
+  res.send("Push server running!");
 });
 
-app.post('/registerSubscription', (req, res) => {
-  const sub = req.body;
-  // add dedupe logic in real app
-  SUBSCRIPTIONS.push(sub);
-  res.json({ success: true });
+// 🔑 THIS IS THE IMPORTANT ONE
+app.get("/vapidPublicKey", (req, res) => {
+  res.type("text/plain").send(process.env.VAPID_PUBLIC_KEY);
 });
 
-app.post('/sendNow', async (req, res) => {
-  const payload = JSON.stringify(req.body || { title: 'Palabra del día', body: 'Abre la app para ver la palabra' });
-  const results = [];
-  for (const s of SUBSCRIPTIONS) {
+app.post("/subscribe", (req, res) => {
+  pushSubscriptions.push(req.body);
+  res.status(201).json({ message: "Subscribed" });
+});
+
+app.get("/send", async (req, res) => {
+  const word = words[Math.floor(Math.random() * words.length)];
+  const payload = JSON.stringify({
+    title: word.word,
+    body: `Meaning: ${word.meaning}`
+  });
+
+  for (const sub of pushSubscriptions) {
     try {
-      await webpush.sendNotification(s, payload);
-      results.push({ ok: true });
-    } catch (e) {
-      results.push({ ok: false, error: e.message });
+      await webpush.sendNotification(sub, payload);
+    } catch (err) {
+      console.error("Push error:", err.message);
     }
   }
-  res.json({ results });
+
+  res.json({ message: "Notifications sent" });
 });
 
+// ----- PORT (Render REQUIRED) -----
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=>console.log('Server listening on', PORT));
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
+
