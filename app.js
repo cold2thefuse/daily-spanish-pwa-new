@@ -33,6 +33,47 @@ const WORDS = [
   {"es":"dinero","en":"money","pos":"noun","example":"No tengo mucho dinero."}
 ];
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+const subscribeBtn = document.getElementById("subscribe");
+
+subscribeBtn.addEventListener("click", async () => {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    // 1️⃣ Get VAPID key from server
+    const response = await fetch(
+      "https://daily-spanish-push-server.onrender.com/vapidPublicKey"
+    );
+    const vapidPublicKey = await response.text();
+
+    // 2️⃣ Subscribe
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    });
+
+    // 3️⃣ Send subscription to server
+    await fetch("https://daily-spanish-push-server.onrender.com/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription)
+    });
+
+    alert("✅ Push notifications enabled!");
+  } catch (err) {
+    console.error("Subscription failed:", err);
+    alert("❌ Subscription failed. Check console.");
+  }
+});
+
 function todayIndex(listLength) {
   const d = new Date();
   // create a stable index using YYYYMMDD numeric sum
