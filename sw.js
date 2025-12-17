@@ -31,3 +31,4 @@ self.addEventListener('notificationclick', e=>{
     if (clients.openWindow) return clients.openWindow('/');
   }));
 });
+
