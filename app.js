@@ -1,5 +1,6 @@
-
 // app.js - Daily Spanish Word client
+
+// ---------------- WORD DATA ----------------
 const WORDS = [
   {"es":"casa","en":"house","pos":"noun","example":"La casa es grande."},
   {"es":"perro","en":"dog","pos":"noun","example":"El perro está jugando."},
@@ -19,11 +20,9 @@ const WORDS = [
   {"es":"escuchar","en":"to listen","pos":"verb","example":"Escucha la canción."},
   {"es":"leer","en":"to read","pos":"verb","example":"Me gusta leer libros."},
   {"es":"escribir","en":"to write","pos":"verb","example":"Voy a escribir un correo."},
-  {"es":"feliz","en":"happy","pos":"adj","example":"Estoy muy feliz hoy."},
   {"es":"triste","en":"sad","pos":"adj","example":"Se siente triste."},
   {"es":"rápido","en":"fast","pos":"adj","example":"Él corre muy rápido."},
   {"es":"lento","en":"slow","pos":"adj","example":"El tráfico está lento."},
-  {"es":"libro","en":"book","pos":"noun","example":"Estoy leyendo un libro."},
   {"es":"música","en":"music","pos":"noun","example":"La música está alta."},
   {"es":"película","en":"movie","pos":"noun","example":"Quiero ver una película."},
   {"es":"viajar","en":"to travel","pos":"verb","example":"Me gusta viajar por el mundo."},
@@ -33,111 +32,71 @@ const WORDS = [
   {"es":"dinero","en":"money","pos":"noun","example":"No tengo mucho dinero."}
 ];
 
-function urlBase64ToUint8Array(base64String) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
-
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-}
-const subscribeBtn = document.getElementById("subscribe");
-
-subscribeBtn.addEventListener("click", async () => {
-  try {
-    const registration = await navigator.serviceWorker.ready;
-
-    // 1️⃣ Get VAPID key from server
-    const response = await fetch(
-      "https://daily-spanish-push-server.onrender.com/vapidPublicKey"
-    );
-    const vapidPublicKey = await response.text();
-
-    // 2️⃣ Subscribe
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-    });
-
-    // 3️⃣ Send subscription to server
-    await fetch("https://daily-spanish-push-server.onrender.com/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(subscription)
-    });
-
-    alert("✅ Push notifications enabled!");
-  } catch (err) {
-    console.error("Subscription failed:", err);
-    alert("❌ Subscription failed. Check console.");
-  }
-});
-
+// ---------------- HELPERS ----------------
 function todayIndex(listLength) {
   const d = new Date();
-  // create a stable index using YYYYMMDD numeric sum
   const dateStr = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
   let sum = 0;
-  for (let i=0;i<dateStr.length;i++) sum += dateStr.charCodeAt(i);
+  for (let i = 0; i < dateStr.length; i++) sum += dateStr.charCodeAt(i);
   return sum % listLength;
 }
 
 function showWord() {
-  const idx = todayIndex(WORDS.length);
-  const w = WORDS[idx];
-  document.getElementById('word').textContent = w.es;
-  document.getElementById('pos').textContent = w.pos + " — " + w.en;
-  document.getElementById('meaning').textContent = w.en;
-  document.getElementById('example').textContent = "Ejemplo: " + w.example;
+  const w = WORDS[todayIndex(WORDS.length)];
+  document.getElementById("word").textContent = w.es;
+  document.getElementById("pos").textContent = `${w.pos} — ${w.en}`;
+  document.getElementById("meaning").textContent = w.en;
+  document.getElementById("example").textContent = `Ejemplo: ${w.example}`;
 }
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+// ---------------- INIT ----------------
 showWord();
 
-// TTS
-document.getElementById('pronounce').addEventListener('click', ()=>{
-  const text = document.getElementById('word').textContent;
-  if ('speechSynthesis' in window) {
+// ---------------- BUTTONS ----------------
+document.getElementById("pronounce").addEventListener("click", () => {
+  const text = document.getElementById("word").textContent;
+  if ("speechSynthesis" in window) {
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'es-ES';
+    u.lang = "es-ES";
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
-  } else alert('TTS not supported');
-});
-
-// Copy
-document.getElementById('copy').addEventListener('click', ()=>{
-  const text = document.getElementById('word').textContent + ' — ' + document.getElementById('meaning').textContent;
-  navigator.clipboard?.writeText(text).then(()=>alert('Copied'));
-});
-
-// Share
-document.getElementById('share').addEventListener('click', ()=>{
-  const text = document.getElementById('word').textContent + ' — ' + document.getElementById('meaning').textContent;
-  if (navigator.share) {
-    navigator.share({title:'Palabra del día', text});
-  } else {
-    navigator.clipboard?.writeText(text).then(()=>alert('Copied'));
   }
 });
 
-// Register service worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(()=>console.log('SW registered'));
+document.getElementById("copy").addEventListener("click", () => {
+  const text = `${document.getElementById("word").textContent} — ${document.getElementById("meaning").textContent}`;
+  navigator.clipboard.writeText(text);
+  alert("Copied!");
+});
+
+document.getElementById("share").addEventListener("click", () => {
+  const text = `${document.getElementById("word").textContent} — ${document.getElementById("meaning").textContent}`;
+  if (navigator.share) {
+    navigator.share({ title: "Palabra del día", text });
+  } else {
+    navigator.clipboard.writeText(text);
+    alert("Copied!");
+  }
+});
+
+// ---------------- SERVICE WORKER ----------------
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("Service Worker registered"));
 }
 
-
-subscribeBtn.addEventListener("click", async () => {
+// ---------------- PUSH SUBSCRIPTION ----------------
+document.getElementById("subscribe").addEventListener("click", async () => {
   try {
-    if (!("serviceWorker" in navigator)) {
-      alert("Service Worker not supported");
-      return;
-    }
-    if (!("PushManager" in window)) {
-      alert("Push not supported in this browser");
-      return;
-    }
-
     const registration = await navigator.serviceWorker.ready;
 
     const response = await fetch(
@@ -150,27 +109,18 @@ subscribeBtn.addEventListener("click", async () => {
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
 
-    await fetch("https://daily-spanish-push-server.onrender.com/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(subscription)
-    });
+    await fetch(
+      "https://daily-spanish-push-server.onrender.com/subscribe",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription)
+      }
+    );
 
     alert("✅ Push notifications enabled!");
   } catch (err) {
-    console.error("Subscription failed:", err);
+    console.error(err);
     alert("❌ Subscription failed. Check console.");
   }
 });
-
-
-
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
