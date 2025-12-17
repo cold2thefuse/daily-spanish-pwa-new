@@ -1,34 +1,34 @@
+self.addEventListener('push', event => {
+  let data = {
+    title: 'Palabra del día',
+    body: 'Abre la app para ver la palabra',
+    url: '/'
+  };
 
-const CACHE = 'daily-spanish-cache-v1';
-const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {}
+  }
 
-self.addEventListener('install', e=>{
-  e.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e=>{
-  e.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', e=>{
-  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-});
-
-self.addEventListener('push', e=>{
-  let data = { title: 'Palabra del día', body: 'Abre la app para ver la palabra', url:'/' };
-  try { data = e.data.json(); } catch(e){}
-  const options = { body: data.body, icon: '/icons/icon-192.svg', badge:'/icons/icon-192.svg', data: { url: data.url } };
-  e.waitUntil(self.registration.showNotification(data.title, options));
-});
-
-self.addEventListener('notificationclick', e=>{
-  e.notification.close();
-  e.waitUntil(clients.matchAll({type:'window'}).then(clientsArr=>{
-    for (const client of clientsArr) {
-      if (client.url === '/' && 'focus' in client) return client.focus();
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: {
+      url: data.url || '/'
     }
-    if (clients.openWindow) return clients.openWindow('/');
-  }));
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow(event.notification.data.url)
+  );
 });
 
