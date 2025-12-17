@@ -126,30 +126,45 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then(()=>console.log('SW registered'));
 }
 
-// Push subscription flow (client-side)
-// Expects server endpoints: GET /vapidPublicKey -> { key: '...' } and POST /registerSubscription (body=subscription)
-async function subscribeToPush() {
-  if (!('serviceWorker' in navigator)) return alert('Service Worker not supported');
-  if (!('PushManager' in window)) return alert('Push not supported in this browser');
-  const reg = await navigator.serviceWorker.ready;
+
+subscribeBtn.addEventListener("click", async () => {
   try {
-    const r = await fetch('/vapidPublicKey');
-    if (!r.ok) throw new Error('Could not fetch VAPID key from server. You must deploy the server.');
-    const data = await r.json();
-    const key = data.key;
-    const converted = urlBase64ToUint8Array(key);
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: converted });
-    // send to server
-    await fetch('/registerSubscription', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(sub) });
-    alert('Subscribed to daily push notifications!');
+    if (!("serviceWorker" in navigator)) {
+      alert("Service Worker not supported");
+      return;
+    }
+    if (!("PushManager" in window)) {
+      alert("Push not supported in this browser");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    const response = await fetch(
+      "https://daily-spanish-push-server.onrender.com/vapidPublicKey"
+    );
+    const vapidPublicKey = await response.text();
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    });
+
+    await fetch("https://daily-spanish-push-server.onrender.com/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subscription)
+    });
+
+    alert("✅ Push notifications enabled!");
   } catch (err) {
-    alert('Subscription failed: ' + (err.message || err));
+    console.error("Subscription failed:", err);
+    alert("❌ Subscription failed. Check console.");
   }
-}
+});
 
-document.getElementById('subscribe').addEventListener('click', subscribeToPush);
 
-function urlBase64ToUint8Array(base64String) {
+
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
